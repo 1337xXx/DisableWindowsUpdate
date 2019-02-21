@@ -26,15 +26,19 @@ namespace DisableWindowsUpdate
                 Console.ReadKey();
                 return;
             }
+
             Console.WriteLine("We will also Disable SuperFetch as in most cases it Decreases System Performence just like update service.");
+            //Disable SuperFetch
             DisableTheSerivce("SysMain");
             Console.WriteLine("Attempting to Disable the Update Service...");
+
 			// disable the update service
             DisableTheSerivce("wuauserv");
             Task.Delay(100);
             Console.WriteLine("Now attempting to Stop the Update Service...");
             Console.WriteLine("If this process takes more than 6 secs, manually close the program as windows is preventing the service to stop...");
-            Console.WriteLine("As the update service is disabled, it wont Auto Update Next time. ( i guess ?! XD )");
+            Console.WriteLine("As the update service is disabled, it wont Auto Update Next time. ( i guess ?! Its WINDOWS Bruhh )");
+
 			// try to stop the update serivce after disabling it.
 			// windows might prevent us from stopping it automatically as if like a fail safe.
             ServiceController sc = new ServiceController("wuauserv");
@@ -44,9 +48,10 @@ namespace DisableWindowsUpdate
                 {
                     sc.Stop();
                 }
+
                 sc.WaitForStatus(ServiceControllerStatus.Stopped);
                 sc.Close();
-				// finished all process. press any key to exit. ez
+				// finished all process. press any key to exit. 
                 Console.WriteLine("Update Service Stopped! Press any key to exit...");
                 Console.ReadKey();
             }
