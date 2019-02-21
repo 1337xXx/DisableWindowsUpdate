@@ -4,6 +4,7 @@ using System.ServiceProcess;
 using System.Threading.Tasks;
 using System.Management;
 using System.Security.Principal;
+using System.Diagnostics;
 
 namespace DisableWindowsUpdate
 {
@@ -27,37 +28,72 @@ namespace DisableWindowsUpdate
                 return;
             }
 
-            Console.WriteLine("We will also Disable SuperFetch as in most cases it Decreases System Performence just like update service.");
+            Console.WriteLine("We will also attempt to disable SuperFetch.");
+            Console.WriteLine("Attempting to disable SuperFetch...");
             //Disable SuperFetch
-            DisableTheSerivce("SysMain");
-            Console.WriteLine("Attempting to Disable the Update Service...");
+            if (DisableTheSerivce("SysMain"))
+            {
+                Console.WriteLine("Disabled SuperFetch Sucessfully!");
+            }
+            else
+            {
+                Console.WriteLine("Failed to Disable SuperFetch.");
+            }
 
-			// disable the update service
-            DisableTheSerivce("wuauserv");
-            Task.Delay(100);
-            Console.WriteLine("Now attempting to Stop the Update Service...");
-            Console.WriteLine("If this process takes more than 6 secs, manually close the program as windows is preventing the service to stop...");
-            Console.WriteLine("As the update service is disabled, it wont Auto Update Next time. ( i guess ?! Its WINDOWS Bruhh )");
+            Console.WriteLine("Attempting to disable Update Service...");
 
-			// try to stop the update serivce after disabling it.
-			// windows might prevent us from stopping it automatically as if like a fail safe.
-            ServiceController sc = new ServiceController("wuauserv");
+            // disable the update service
+            if (DisableTheSerivce("wuauserv"))
+            {
+                Console.WriteLine("Disabled Update Service Sucessfully!");
+            }
+            else
+            {
+                Console.WriteLine("Failed to disable Update Service.");
+            }
+
+
+            Console.WriteLine("Now attempting to stop running SuperFetch and Update Services.");
+            Console.WriteLine("Manually close this program if the process takes more than 5 seconds.");
+
+            if (StopService("wuauserv"))
+            {
+                Console.WriteLine("Sucessfully stopped Windows Update Service.");
+            }
+            else
+            {
+                Console.WriteLine("Failed to Stop Windows Update Service.");
+            }
+
+            if (StopService("SysMain"))
+            {
+                Console.WriteLine("Sucessfully stopped SuperFetch Service.");
+            }
+            else
+            {
+                Console.WriteLine("Failed to stop SuperFetch Service.");
+            }
+
+            Environment.Exit(0);
+        }
+
+        public static bool StopService(string ServiceName)
+        {
+            ServiceController sc = new ServiceController(ServiceName);
             try
             {
                 if (sc != null && sc.Status == ServiceControllerStatus.Running)
                 {
                     sc.Stop();
                 }
-
                 sc.WaitForStatus(ServiceControllerStatus.Stopped);
                 sc.Close();
-				// finished all process. press any key to exit. 
-                Console.WriteLine("Update Service Stopped! Press any key to exit...");
-                Console.ReadKey();
+                return true;
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
+                return false;
             }
         }
 
@@ -71,21 +107,23 @@ namespace DisableWindowsUpdate
 
 		// function to disable the windows update service
 		// only disable, not stop
-        public static void DisableTheSerivce(string serviceName)
+        public static bool DisableTheSerivce(string serviceName)
         {
             try
             {
                 using (var mo = new ManagementObject(string.Format("Win32_Service.Name=\"{0}\"", serviceName)))
                 {
-                    mo.InvokeMethod("ChangeStartMode", new object[] { "Disabled" });
+                    mo.InvokeMethod("ChangeStartMode", new object[] { "Disabled" });                    
                 }
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
+                return false;
             }
             
             Console.WriteLine("Update Service Disabled Sucessfully!");
+            return true;
         }
 
 		// function to check if the OS running is windows 10
